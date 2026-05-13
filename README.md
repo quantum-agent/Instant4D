@@ -10,7 +10,7 @@
 
 Clone the repository with the submodules by using:
 ```shell
-git clone --recursive git@github.com:Zhanpeng1202/Instant4D.git
+git clone --recursive https://github.com/Zhanpeng1202/Instant4D.git
 ```
 
 ### Environment
@@ -118,16 +118,63 @@ rm data.zip
 ### [DAVIS](https://davischallenge.org/davis2016/code.html) or custom sequences
 We provide sample videos under `examples/`, one can start from reproduce them.
 
+### Reconstruction / preprocessing
 
+`script/reconstruct.sh` no longer requires editing the file in-place for scene names, paths, or GPU selection.
+Use `--help` for the full option list.
+
+```shell
+bash script/reconstruct.sh \
+  --scenes panda \
+  --data-dir "$(pwd)/example" \
+  --depth-dir "$(pwd)/SLAM/medium"
+```
+
+Optional GPU pinning is now explicit:
+
+```shell
+bash script/reconstruct.sh --scenes panda --gpu 0
+```
+
+### Prune / scene bundle generation
+
+`script/prune.py` now accepts explicit input/output paths instead of relying on hardcoded author-machine directories.
+
+```shell
+python script/prune.py \
+  --scene panda \
+  --droid-dir "$(pwd)/SLAM/mega-sam/outputs_cvd" \
+  --motion-dir "$(pwd)/SLAM/mega-sam/reconstructions" \
+  --save-dir "$(pwd)/SLAM/voxel_filter/output/sora" \
+  --image-root "$(pwd)/example"
+```
 
 ### Optimization
 
-Change the `path` and `weight` in `script/reconstruct.sh` and change the config accordingly in the script/optmize
+`script/optimize.py` now accepts normal CLI/config inputs without overriding them with the built-in panda dev scene.
+
+```shell
+python script/optimize.py \
+  --config configs/sora/panda.yaml \
+  --source_path /path/to/prepared/scene \
+  --model_path /path/to/output/run
 ```
-source script/reconstruct.sh 
-python -m script.prune
-python -m script.optmize
+
+### Smoke test path
+
+A lightweight optimization smoke test is now available for an already-prepared scene bundle:
+
+```shell
+bash script/smoke_test.sh \
+  --source-path /path/to/prepared/scene \
+  --model-path /path/to/output/smoke
 ```
+
+Expected prepared scene contents:
+- `filtered_cvd.npz`
+- `transforms_train.json`
+- `transforms_test.json`
+- referenced frame images
 
 
 ## Acknowledgement
