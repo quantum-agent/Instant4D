@@ -1,6 +1,6 @@
 [submodule "SLAM/mega-sam"]
 	path = SLAM/mega-sam
-	url = https://github.com/mega-sam/mega-sam/
+	url = https://github.com/quantum-agent/mega-sam.git
 [submodule "submodule/fused-ssim"]
 	path = submodule/fused-ssim
 	url = https://github.com/rahul-goel/fused-ssim
