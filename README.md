@@ -8,10 +8,12 @@
 
 ## Installation
 
-Clone the repository with the submodules by using:
+Clone the repository normally:
 ```shell
-git clone --recursive https://github.com/Zhanpeng1202/Instant4D.git
+git clone https://github.com/quantum-agent/Instant4D.git
 ```
+
+This fork vendors its previously nested dependencies directly in-tree, so no recursive submodule checkout is required.
 
 ### Environment
 
@@ -30,8 +32,7 @@ pip install xformers # read below
 ```
 
 
-To install mega-sam, run the following command: <br>
-Note: change the `.type()` to `scalar_type()` in `mega-sam\base\src\altcorr_kernel`, `mega-sam\base\src\correlation_kernels` and `mega-sam/base/thirdparty/lietorch/lietorch/src/lietorch_gpu.cu` if using torch >2.7, refer this [issue](https://github.com/NVIDIAGameWorks/kaolin/issues/865).
+To install the vendored Mega-SAM/base/LieTorch stack, run:
 ```shell
 cd SLAM/mega-sam/base
 python setup.py install
@@ -54,9 +55,9 @@ Noted that the gaussian splatting package will be compile during the first runni
 ### Downloading pretrained checkpoints for mega-sam
 
 1.  Download [DepthAnything checkpoint](https://huggingface.co/spaces/LiheYoung/Depth-Anything/blob/main/checkpoints/depth_anything_vitl14.pth) to
-    mega-sam/Depth-Anything/checkpoints/depth_anything_vitl14.pth
+    SLAM/mega-sam/Depth-Anything/checkpoints/depth_anything_vitl14.pth
 
-2.  Download and include [RAFT checkpoint](https://drive.google.com/drive/folders/1sWDsfuZ3Up38EUQt7-JDTT1HcGHuJgvT) at mega-sam/cvd_opt/raft-things.pth
+2.  Download and include [RAFT checkpoint](https://drive.google.com/drive/folders/1sWDsfuZ3Up38EUQt7-JDTT1HcGHuJgvT) at SLAM/mega-sam/cvd_opt/raft-things.pth
 
 
 
@@ -184,6 +185,9 @@ This work is built on many amazing research works and open-source projects, than
 - [Gaussian-Splatting](https://github.com/graphdeco-inria/gaussian-splatting) and [diff-gaussian-rasterization](https://github.com/graphdeco-inria/diff-gaussian-rasterization)
 - [4d-gaussian-splatting](https://github.com/fudan-zvg/4d-gaussian-splatting)
 - [Mega-SAM](https://github.com/mega-sam/mega-sam)
+- [base](https://github.com/mega-sam/base)
+- [LieTorch](https://github.com/princeton-vl/lietorch)
+- [fused-ssim](https://github.com/rahul-goel/fused-ssim)
 
 ## Citation
 
