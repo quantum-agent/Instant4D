@@ -6,6 +6,8 @@ on:
       - main
       - 'quantum/**'
   pull_request:
+    branches:
+      - main
 
 jobs:
   lightweight-regression-checks:
