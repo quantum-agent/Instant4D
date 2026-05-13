@@ -343,20 +343,32 @@ def setup_seed(seed):
      random.seed(seed)
      torch.backends.cudnn.deterministic = True
 
+
+def apply_omegaconf_over_defaults(args, defaults, cfg):
+    def recursive_merge(host):
+        for key, value in host.items():
+            if isinstance(value, DictConfig):
+                recursive_merge(value)
+            else:
+                assert hasattr(args, key), key
+                if getattr(args, key) == getattr(defaults, key):
+                    setattr(args, key, value)
+
+    recursive_merge(cfg)
+
+
 if __name__ == "__main__":
-    # Set up command line argument parser
     parser = ArgumentParser(description="Training script parameters")
     lp = ModelParams(parser)
     op = OptimizationParams(parser)
     pp = PipelineParams(parser)
-    parser.add_argument("--config", default = "",type=str)
+    parser.add_argument("--config", default="", type=str)
     parser.add_argument('--debug_from', type=int, default=-1)
     parser.add_argument('--detect_anomaly', action='store_true', default=False)
     parser.add_argument("--test_iterations", nargs="+", type=int, default=[7_000])
     parser.add_argument("--save_iterations", nargs="+", type=int, default=[3000])
     parser.add_argument("--quiet", action="store_true")
-    parser.add_argument("--start_checkpoint", type=str, default = None)
-    
+    parser.add_argument("--start_checkpoint", type=str, default=None)
     parser.add_argument("--gaussian_dim", type=int, default=3)
     parser.add_argument("--time_duration", nargs=2, type=float, default=[-0.5, 0.5])
     parser.add_argument('--num_pts', type=int, default=100_000)
@@ -366,50 +378,39 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=1)
     parser.add_argument("--seed", type=int, default=6666)
     parser.add_argument("--exhaust_test", action="store_true")
-    network_gui_websocket.init("127.0.0.1", 6119) # make sure to forward this port on the code IDE
+    parser.add_argument("--websocket_host", type=str, default="127.0.0.1")
+    parser.add_argument("--websocket_port", type=int, default=6119)
+    parser.add_argument("--disable_websocket", action="store_true")
+
+    defaults = parser.parse_args([])
     args = parser.parse_args(sys.argv[1:])
-    # cfg_dir, specfiy training parameter for optimization
-    cfg_path    = "Instant4D/configs/sora/panda.yaml"
-    # source_dir, specify the pruning results from geometry recovery
-    source_path = "Instant4D/example/panda" 
-    # model_dir, the place we save visualization
-    model_path  = "Instant4D/example/panda"
 
+    if args.config:
+        cfg = OmegaConf.load(args.config)
+        apply_omegaconf_over_defaults(args, defaults, cfg)
 
+    if not args.source_path:
+        parser.error("--source_path is required unless supplied via config")
+    if not args.model_path:
+        parser.error("--model_path is required unless supplied via config")
 
-    args.config = cfg_path
-    cfg = OmegaConf.load(args.config)
-    
-    # a nasty fix for a bug during development
-    def recursive_merge(key, host):
-        if isinstance(host[key], DictConfig):
-            for key1 in host[key].keys():
-                recursive_merge(key1, host[key])
-        else:
-            assert hasattr(args, key), key
-            setattr(args, key, host[key])
-    for k in cfg.keys():
-        recursive_merge(k, cfg)
-            
+    args.source_path = os.path.abspath(args.source_path)
+    args.model_path = os.path.abspath(args.model_path)
+
+    if not args.disable_websocket:
+        network_gui_websocket.init(args.websocket_host, args.websocket_port)
 
     setup_seed(args.seed)
-    
-    print("Optimizing " + args.model_path)
 
-    # Initialize system state (RNG)
+    print("Optimizing " + args.model_path)
     safe_state(args.quiet)
 
-    
     lp_ = lp.extract(args)
     op_ = op.extract(args)
     pp_ = pp.extract(args)
-    lp_.source_path = source_path
-    lp_.model_path  = model_path
-
 
     torch.autograd.set_detect_anomaly(args.detect_anomaly)
     training(lp_, op_, pp_, args.test_iterations, args.save_iterations, args.start_checkpoint, args.debug_from,
             args.gaussian_dim, args.time_duration, args.num_pts, args.num_pts_ratio, args.rot_4d, args.force_sh_3d, args.batch_size)
 
-    # All done
     print("\nTraining complete.")
