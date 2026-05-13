@@ -3,9 +3,7 @@ import json
 import os
 from typing import NamedTuple
 
-import cv2
 import numpy as np
-import point_cloud_utils as pcu
 
 
 class pcd(NamedTuple):
@@ -46,6 +44,8 @@ def back_project(depth, intrinsic, cam_c2w):
 
 
 def read_droid_data(droid_path, motion_path, save_dir):
+    import cv2
+
     droid_data = np.load(droid_path)
     print(droid_data.keys())
 
@@ -92,7 +92,7 @@ def process_data(depth, color, motion_prob, intrinsic, cam_c2w, time_span=3.0):
 
 
 def dynamic_static_split(pc, threshold=0.5):
-    dynamic_region = pc.prob_motion > threshold
+    dynamic_region = (pc.prob_motion > threshold).reshape(-1)
     static_region = ~dynamic_region
 
     print(f"shape of dynamic region: {dynamic_region.shape}")
@@ -164,6 +164,8 @@ def voxel_filter(
     time_span=3.0,
     dynamic_threshold=0.5,
 ):
+    import point_cloud_utils as pcu
+
     depth, color, motion_prob, intrinsic, cam_c2w = read_droid_data(droid_path, motion_path, save_dir)
 
     B, _, _ = depth.shape

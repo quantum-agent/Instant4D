@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'quantum/**'
+  pull_request:
+
+jobs:
+  lightweight-regression-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install lightweight test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest numpy omegaconf
+
+      - name: Run unit tests
+        run: pytest -q
+
+      - name: Verify shell entrypoints expose help text
+        run: |
+          bash script/reconstruct.sh --help
+          bash script/smoke_test.sh --help

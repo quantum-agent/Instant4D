@@ -15,12 +15,12 @@ from arguments import ModelParams, PipelineParams, OptimizationParams
 from torchvision.utils import make_grid
 import numpy as np
 from omegaconf import OmegaConf
-from omegaconf.dictconfig import DictConfig
 from gaussian_renderer import network_gui_websocket
 from torch.utils.data import DataLoader
 import cv2
 import json
 import time
+from config_utils import apply_omegaconf_over_defaults
 try:
     from torch.utils.tensorboard import SummaryWriter
     TENSORBOARD_FOUND = True
@@ -342,19 +342,6 @@ def setup_seed(seed):
      np.random.seed(seed)
      random.seed(seed)
      torch.backends.cudnn.deterministic = True
-
-
-def apply_omegaconf_over_defaults(args, defaults, cfg):
-    def recursive_merge(host):
-        for key, value in host.items():
-            if isinstance(value, DictConfig):
-                recursive_merge(value)
-            else:
-                assert hasattr(args, key), key
-                if getattr(args, key) == getattr(defaults, key):
-                    setattr(args, key, value)
-
-    recursive_merge(cfg)
 
 
 if __name__ == "__main__":
