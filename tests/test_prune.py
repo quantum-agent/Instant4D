@@ -2,7 +2,7 @@ import json
 
 import numpy as np
 
-from prune import back_project, dynamic_static_split, make_transforms, pcd
+from prune import _downsample_with_rgb_channels, back_project, dynamic_static_split, make_transforms, pcd
 
 
 def test_back_project_projects_identity_camera_points():
@@ -31,6 +31,34 @@ def test_dynamic_static_split_partitions_points_by_threshold():
         static_cloud.xyz,
         np.array([[0.0, 0.0, 0.0], [2.0, 2.0, 2.0]], dtype=np.float32),
     )
+
+
+def test_downsample_with_rgb_channels_reassembles_rgb_from_scalar_attributes():
+    class FakePCU:
+        @staticmethod
+        def downsample_point_cloud_on_voxel_grid(voxel_size, xyz, r, g, b, *extras):
+            np.testing.assert_allclose(r, np.array([0.1, 0.4]))
+            np.testing.assert_allclose(g, np.array([0.2, 0.5]))
+            np.testing.assert_allclose(b, np.array([0.3, 0.6]))
+            return (
+                np.array([[9.0, 8.0, 7.0]], dtype=np.float64),
+                np.array([0.25], dtype=np.float64),
+                np.array([0.5], dtype=np.float64),
+                np.array([0.75], dtype=np.float64),
+                np.array([0.9], dtype=np.float64),
+            )
+
+    xyz, rgb, motion = _downsample_with_rgb_channels(
+        FakePCU(),
+        0.1,
+        np.array([[0.0, 0.0, 0.0], [1.0, 1.0, 1.0]], dtype=np.float32),
+        np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]], dtype=np.float32),
+        np.array([0.8, 1.0], dtype=np.float32),
+    )
+
+    np.testing.assert_allclose(xyz, np.array([[9.0, 8.0, 7.0]]))
+    np.testing.assert_allclose(rgb, np.array([[0.25, 0.5, 0.75]]))
+    np.testing.assert_allclose(motion, np.array([0.9]))
 
 
 def test_make_transforms_writes_expected_camera_metadata(tmp_path):

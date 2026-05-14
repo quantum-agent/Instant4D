@@ -154,6 +154,25 @@ def make_transforms(intrinsic, cam_c2w, save_dir, frame_dir, image_width, image_
         json.dump(dict_to_save, f, indent=4)
 
 
+def _downsample_with_rgb_channels(pcu, voxel_size, xyz, rgb, *extra_attributes):
+    xyz = np.ascontiguousarray(xyz, dtype=np.float64)
+    rgb = np.ascontiguousarray(rgb, dtype=np.float64)
+    extras = [np.ascontiguousarray(attr, dtype=np.float64) for attr in extra_attributes]
+
+    downsampled = pcu.downsample_point_cloud_on_voxel_grid(
+        voxel_size,
+        xyz,
+        rgb[:, 0],
+        rgb[:, 1],
+        rgb[:, 2],
+        *extras,
+    )
+    xyz_out = downsampled[0]
+    rgb_out = np.stack(downsampled[1:4], axis=1)
+    extra_out = downsampled[4:]
+    return (xyz_out, rgb_out, *extra_out)
+
+
 def voxel_filter(
     droid_path,
     motion_path,
@@ -194,19 +213,21 @@ def voxel_filter(
     voxel_size_dynamic = mean_depth / focal * 0.5
     voxel_size_static = mean_depth / focal * 2
 
-    xyz_static, rgb_static, prob_motion_static = pcu.downsample_point_cloud_on_voxel_grid(
+    xyz_static, rgb_static, prob_motion_static = _downsample_with_rgb_channels(
+        pcu,
         voxel_size_static,
         pcd_static.xyz,
         pcd_static.rgb,
-        pcd_static.prob_motion,
+        np.asarray(pcd_static.prob_motion).reshape(-1),
     )
 
-    xyz_dynamic, rgb_dynamic, prob_motion_dynamic, time_stamp_dynamic = pcu.downsample_point_cloud_on_voxel_grid(
+    xyz_dynamic, rgb_dynamic, prob_motion_dynamic, time_stamp_dynamic = _downsample_with_rgb_channels(
+        pcu,
         voxel_size_dynamic,
         pcd_dynamic.xyz,
         pcd_dynamic.rgb,
-        pcd_dynamic.prob_motion,
-        pcd_dynamic.time_stamp,
+        np.asarray(pcd_dynamic.prob_motion).reshape(-1),
+        np.asarray(pcd_dynamic.time_stamp).reshape(-1),
     )
 
     time_stamp_static = np.repeat(1, xyz_static.shape[0])
@@ -215,8 +236,8 @@ def voxel_filter(
 
     xyz_sampled = np.concatenate([xyz_static, xyz_dynamic], axis=0)
     rgb_sampled = np.concatenate([rgb_static, rgb_dynamic], axis=0)
-    prob_motion_sampled = np.concatenate([prob_motion_static.squeeze(), prob_motion_dynamic.squeeze()], axis=0)
-    time_stamp_sampled = np.concatenate([time_stamp_static.squeeze(), time_stamp_dynamic.squeeze()], axis=0)
+    prob_motion_sampled = np.concatenate([np.asarray(prob_motion_static).squeeze(), np.asarray(prob_motion_dynamic).squeeze()], axis=0)
+    time_stamp_sampled = np.concatenate([time_stamp_static.squeeze(), np.asarray(time_stamp_dynamic).squeeze()], axis=0)
     scale_time_sampled = np.concatenate([scale_time_static, scale_time_dynamic], axis=0)
 
     print("--------------------------------")
