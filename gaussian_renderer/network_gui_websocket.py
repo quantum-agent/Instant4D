@@ -23,6 +23,7 @@ web_camera = None
 latest_width = 0
 latest_height = 0
 latest_result = bytes([])
+webpage_train_speed = 0.0
 
 # task_completed = asyncio.Event()
 
@@ -86,7 +87,12 @@ def run_asyncio_loop(wish_host, wish_port):
     asyncio.run(websocket_server(wish_host, wish_port))
 
 def init(wish_host, wish_port):
-    thread = threading.Thread(target=run_asyncio_loop,args=[wish_host, wish_port])
+    thread = threading.Thread(
+        target=run_asyncio_loop,
+        args=[wish_host, wish_port],
+        name="instant4d-websocket-viewer",
+        daemon=True,
+    )
     thread.start()
 
 
@@ -122,9 +128,9 @@ def render_for_websocket(gaussians, pipe, background):
         scale = extrin[6]
 
         time_duration=gaussians.time_duration[1]-gaussians.time_duration[0]
-        web_camera.timestamp = time_duration*extrin[7]
-        
-        
+        time_value = extrin[7] if len(extrin) > 7 else webpage_train_speed
+        web_camera.timestamp = time_duration * time_value
+
         web_rot = eulerRotation(theata,phi,psi)
         web_camera.R = web_rot
         
@@ -166,9 +172,9 @@ def render_for_colmap(gaussians, pipe, background, itr, save_dir):
         scale = extrin[6]
 
         time_duration=gaussians.time_duration[1]-gaussians.time_duration[0]
-        web_camera.timestamp = time_duration*extrin[7]
-        
-        
+        time_value = extrin[7] if len(extrin) > 7 else webpage_train_speed
+        web_camera.timestamp = time_duration * time_value
+
         web_rot = eulerRotation(theata,phi,psi)
         web_camera.R = web_rot
         
