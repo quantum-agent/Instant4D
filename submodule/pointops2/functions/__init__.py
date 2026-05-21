@@ -1,1 +1,1 @@
-from pointops2 import *
+from .pointops import *
